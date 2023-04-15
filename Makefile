@@ -21,7 +21,7 @@ CDEBUG:=-D _DEBUG -ggdb3 -fcheck-new -fsized-deallocation -fstack-protector\
 }null,object-size,return,returns-nonnull-attribute,shift,${strip \
 }signed-integer-overflow,undefined,unreachable,vla-bound,vptr
 
-CMACHINE:=-mavx512f
+CMACHINE:=-mavx512f -mavx512bw
 
 CFLAGS:=-std=c++2a -fPIE -pie $(CMACHINE) $(CWARN)
 BUILDTYPE?=Debug

@@ -96,7 +96,7 @@ void run_main_loop(RenderScene* scene)
         memcpy(scene->texture_pixels, scene->background.pixel_array,
                 bg_size_x*bg_size_y*sizeof(*scene->texture_pixels));
 
-        blend_pixels_simple(&texture_image, &moved_fg);
+        blend_pixels_optimized(&texture_image, &moved_fg);
         scene->display_texture.update(
                 (const sf::Uint8*) scene->texture_pixels);
 

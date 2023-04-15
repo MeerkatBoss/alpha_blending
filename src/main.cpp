@@ -6,9 +6,9 @@
 int main()
 {
     const RenderConfig config = {
-        .fg_pos = { 538, 274 },
+        .fg_pos = { 544, 278 },
         .fg_image_name = "assets/poltorashka_cropped_medium.bmp",
-        .bg_image_name = "assets/wooden_table.bmp",
+        .bg_image_name = "assets/wooden_table_scaled.bmp",
         .font_name     = "assets/" FONTNAME ".ttf"
     };
     RenderScene scene = {};
