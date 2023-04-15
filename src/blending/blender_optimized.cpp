@@ -6,6 +6,12 @@
 
 const char MASK_ZERO = (char) 0x80;
 
+/*
+ * [ r0 g0 b0 a0 | r1 g1 b1 a1 | r2 g2 b2 a2 | r3 g3 b3 a3 ]
+ *                             V
+ *                             V
+ * [ r0 00 g0 00   b0 00 a0 00 | r1 00 g1 00   b1 00 a1 00 ]
+ */
 #define MASK_SPREAD_1_ROW \
     MASK_ZERO, 0x07,\
     MASK_ZERO, 0x06,\
@@ -16,6 +22,12 @@ const char MASK_ZERO = (char) 0x80;
     MASK_ZERO, 0x01,\
     MASK_ZERO, 0x00
 
+/*
+ * [ r0 g0 b0 a0 | r1 g1 b1 a1 | r2 g2 b2 a2 | r3 g3 b3 a3 ]
+ *                             V
+ *                             V
+ * [ r2 00 g2 00   b2 00 a2 00 | r3 00 g3 00   b3 00 a3 00 ]
+ */
 #define MASK_SPREAD_2_ROW \
     MASK_ZERO, 0x0F,\
     MASK_ZERO, 0x0E,\
@@ -26,6 +38,12 @@ const char MASK_ZERO = (char) 0x80;
     MASK_ZERO, 0x09,\
     MASK_ZERO, 0x08
 
+/*
+ * [ r0 00 g0 00 b0 00 a0 00 | r1 00 g1 00 b1 00 a1 00 ]
+ *                           V
+ *                           V
+ * [ a0 00 a0 00 a0 00 a0 00 | a1 00 a1 00 a1 00 a1 00 ]
+ */
 #define MASK_SPREAD_ALPHA_ROW \
     MASK_ZERO, 0x0E,\
     MASK_ZERO, 0x0E,\
@@ -36,6 +54,15 @@ const char MASK_ZERO = (char) 0x80;
     MASK_ZERO, 0x06,\
     MASK_ZERO, 0x06
 
+/*
+ * Because alpha channel is not updated, it resides in lower byte
+ * of half-word, unlike other channels
+ *
+ * [ xx r0 xx g0   xx b0 a0 00 | xx r1 xx g1   xx b1 a1 00 ]
+ *                             V
+ *                             V
+ * [ r0 g0 b0 a0 | r1 g1 b1 a1 | 00 00 00 00 | 00 00 00 00 ]
+ */
 #define MASK_PACK_1_ROW \
     MASK_ZERO, MASK_ZERO,\
     MASK_ZERO, MASK_ZERO,\
@@ -46,6 +73,15 @@ const char MASK_ZERO = (char) 0x80;
     0x06,      0x05,     \
     0x03,      0x01
 
+/*
+ * Because alpha channel is not updated, it resides in lower byte
+ * of half-word, unlike other channels
+ *
+ * [ xx r2 xx g2   xx b2 a2 00 | xx r2 xx g2   xx b2 a2 00 ]
+ *                             V
+ *                             V
+ * [ 00 00 00 00 | 00 00 00 00 | r2 g2 b2 a2 | r3 g3 b3 a3 ]
+ */
 #define MASK_PACK_2_ROW \
     0x0E,      0x0D,     \
     0x0B,      0x09,     \
@@ -91,8 +127,10 @@ const __m512i MASK_PACK_2 = _mm512_set_epi8(
     MASK_PACK_2_ROW
 );
 
+// All half-words set to 255
 const __m512i EPI16_255 = _mm512_set1_epi16(0x00FF);
 
+// During calculations, alpha channel of background should not be affected
 const __mmask32 IGNORE_ALPHA = _cvtu32_mask32(0x77777777);
 
 #undef MASK_SPREAD_1_ROW
@@ -129,12 +167,7 @@ int blend_pixels_optimized(PixelImage* background,
     SAFE_BLOCK_END
 
     Pixel* bg_row = background->pixel_array + bg_size_x*fg_pos_y + fg_pos_x;
-    Pixel* fg_row = (Pixel*) foreground->pixel_array;
-
-    fg_row[0].alpha = 0;
-    fg_row[1].alpha = 1;
-    fg_row[2].alpha = 2;
-    fg_row[3].alpha = 3;
+    const Pixel* fg_row = foreground->pixel_array;
 
     for (size_t y = 0; y < fg_size_y; ++y)
     {
@@ -167,11 +200,10 @@ int blend_pixels_optimized(PixelImage* background,
             bg1 = _mm512_shuffle_epi8(bg1, MASK_PACK_1);
             bg2 = _mm512_shuffle_epi8(bg2, MASK_PACK_2);
 
+            // Pixels do not intersect and can be simply added
             bg1 = _mm512_add_epi8(bg1, bg2);
 
             _mm512_storeu_si512(bg_row + x, bg1);
-
-            int z = 0;
         }
 
         fg_row += fg_size_x;

@@ -27,7 +27,7 @@ CFLAGS:=-std=c++2a -fPIE -pie $(CMACHINE) $(CWARN)
 BUILDTYPE?=Debug
 
 ifeq ($(BUILDTYPE), Release)
-	CFLAGS:=-O3 $(CFLAGS)
+	CFLAGS:=-O2 $(CFLAGS)
 else
 	CFLAGS:=-O0 $(CDEBUG) $(CFLAGS)
 endif
