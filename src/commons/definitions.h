@@ -26,10 +26,19 @@ struct Pixel
     uint8_t alpha;
 };
 
+typedef Pixel Color;
+
 struct SizeVector2
 {
     size_t x;
     size_t y;
+};
+
+struct Halo
+{
+    size_t radius_px;
+    SizeVector2 center;
+    Color color;
 };
 
 struct PixelImage

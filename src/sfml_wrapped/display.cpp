@@ -4,6 +4,7 @@
 #include "meerkat_assert/asserts.h"
 #include "sfml_wrapped/loader.h"
 #include "blending/blender.h"
+#include "effects/halo.h"
 
 #include "display.h"
 
@@ -78,6 +79,12 @@ void run_main_loop(RenderScene* scene)
         .pixel_array = scene->texture_pixels
     };
 
+    Halo halo = {
+        .radius_px = 384,
+        .center = {800, 534},
+        .color = {247, 200, 113, 255}
+    };
+
     sf::Clock clock;
     while (scene->window.isOpen())
     {
@@ -96,6 +103,7 @@ void run_main_loop(RenderScene* scene)
         memcpy(scene->texture_pixels, scene->background.pixel_array,
                 bg_size_x*bg_size_y*sizeof(*scene->texture_pixels));
 
+        add_halo_simple(&texture_image, &halo);
         blend_pixels_optimized(&texture_image, &moved_fg);
         scene->display_texture.update(
                 (const sf::Uint8*) scene->texture_pixels);
