@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "meerkat_assert/asserts.h"
 #include "sfml_wrapped/loader.h"
@@ -53,7 +54,15 @@ void render_scene_dispose(RenderScene* scene)
     unload_image(&scene->background);
 }
 
-void run_main_loop(RenderScene* scene)
+__always_inline
+static size_t get_halo_radius(double time)
+{
+    size_t result = (size_t) abs(380*(sin(time*2)/10 + 0.9));
+
+    return result;
+}
+
+void run_main_loop(RenderScene* scene) // TODO: Split into several functions
 {
     char buffer[16] = "";
 
@@ -79,13 +88,14 @@ void run_main_loop(RenderScene* scene)
         .pixel_array = scene->texture_pixels
     };
 
-    Halo halo = {
-        .radius_px = 384,
-        .center = {800, 534},
-        .color = {247, 200, 113, 255}
+    Halo halo = {   // TODO: extract to config
+        .radius_px = 0,
+        .center = {800, 480},
+        .color = {244, 221, 144, 255}
     };
 
     sf::Clock clock;
+    double time = 0;
     while (scene->window.isOpen())
     {
         sf::Event event;
@@ -97,13 +107,15 @@ void run_main_loop(RenderScene* scene)
 
         scene->window.clear(sf::Color::White);
         float timeDelta = clock.restart().asSeconds();
+        time += timeDelta;
         snprintf(buffer, 16, "%.1f FPS", 1.f/timeDelta);
         scene->fps_text.setString(buffer);
 
         memcpy(scene->texture_pixels, scene->background.pixel_array,
                 bg_size_x*bg_size_y*sizeof(*scene->texture_pixels));
 
-        add_halo_simple(&texture_image, &halo);
+        halo.radius_px = get_halo_radius(time);
+        add_halo_optimized(&texture_image, &halo);
         blend_pixels_optimized(&texture_image, &moved_fg);
         scene->display_texture.update(
                 (const sf::Uint8*) scene->texture_pixels);

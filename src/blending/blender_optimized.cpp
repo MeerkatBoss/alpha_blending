@@ -139,11 +139,8 @@ const __mmask32 IGNORE_ALPHA = _cvtu32_mask32(0x77777777);
 #undef MASK_PACK_1_ROW
 #undef MASK_PACK_2_ROW
 
-void combine_pixels_simd(Pixel bg[16], const Pixel fg[16])
+__m512i combine_pixels_simd(__m512i bg1, __m512i fg1)
 {
-    __m512i fg1 = _mm512_loadu_si512(fg);
-    __m512i bg1 = _mm512_loadu_si512(bg);
-
     __m512i fg2 = _mm512_shuffle_epi8(fg1, MASK_SPREAD_2);
     __m512i bg2 = _mm512_shuffle_epi8(bg1, MASK_SPREAD_2);
             fg1 = _mm512_shuffle_epi8(fg1, MASK_SPREAD_1);
@@ -170,7 +167,7 @@ void combine_pixels_simd(Pixel bg[16], const Pixel fg[16])
     // Pixels do not intersect and can be simply added
     bg1 = _mm512_add_epi8(bg1, bg2);
 
-    _mm512_storeu_si512(bg, bg1);
+    return bg1;
 }
 
 int blend_pixels_optimized(PixelImage* background,
@@ -206,7 +203,10 @@ int blend_pixels_optimized(PixelImage* background,
         size_t x = 0;
         for (x = 0; x + 16 <= fg_size_x; x += 16)
         {
-            combine_pixels_simd(bg_row + x, fg_row + x);
+            __m512i bg = _mm512_loadu_si512(bg_row + x);
+            __m512i fg = _mm512_loadu_si512(fg_row + x);
+            __m512i result = combine_pixels_simd(bg, fg);
+            _mm512_storeu_si512(bg_row + x, result);
         }
         // Remaining pixels
         for (; x < fg_size_x; ++x)

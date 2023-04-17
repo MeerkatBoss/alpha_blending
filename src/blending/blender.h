@@ -12,6 +12,7 @@
 #ifndef __BLENDER_H
 #define __BLENDER_H
 
+#include <immintrin.h>
 #include "commons/definitions.h"
 
 /**
@@ -30,7 +31,7 @@ void combine_pixels(Pixel* bg, const Pixel* fg);
  * @param[in]    fg - Foreground pixels
  *
  */
-void combine_pixels_simd(Pixel bg[16], const Pixel fg[16]);
+__m512i combine_pixels_simd(__m512i bg, __m512i fg);
 
 /**
  * @brief Blend foreground on top of backround and store result

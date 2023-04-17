@@ -58,7 +58,7 @@ int add_halo_simple(PixelImage* background, const Halo* halo)
 
     for (size_t y = 0; y <= radius*2; y++)
     {
-        for (size_t x = 0; x <= radius*2; x++)
+        for (size_t x = 0; x <= radius*2; x++) // TODO: Extract
         {
             double dx = (double) (x > radius
                                   ? x - radius
@@ -76,8 +76,7 @@ int add_halo_simple(PixelImage* background, const Halo* halo)
 
             // color_base is intentionally NOT normalized, int overflow
             // produces really cool stripes
-            uint8_t alpha = (uint8_t) (unsigned)
-                            (13*sqrt(sqrt(color_base)) * sqrt(color_base));
+            uint8_t alpha = (uint8_t) (unsigned) (255 * sqrt(color_base));
 
             // uint8_t alpha = (uint8_t) (255 * color_base);
             blended.alpha = alpha;
