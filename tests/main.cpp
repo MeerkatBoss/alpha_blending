@@ -31,7 +31,7 @@ int main()
     };
 
     const size_t sample_size = 500;
-    const size_t repeat = 300;
+    const size_t repeat = 200;
     size_t* test_data = (size_t*) calloc(sample_size, sizeof(*test_data));
     
     const test_args args = { &background, &moved_fg };

@@ -1,5 +1,5 @@
 build/bin/project_tests 
-without SIMD: 471.54ms (~9.41ms)
-   with SIMD: 69.07ms (~1.18ms)
+without SIMD: 469.41ms (~12.94ms)
+   with SIMD: 54.51ms (~1.07ms)
 
-Performance increase: 6.83 (~0.25)
+Performance increase: 8.61 (~0.41)
