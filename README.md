@@ -129,7 +129,7 @@ but it gained the ability to perform calculations on 16 pixels per loop
 iteration, as opposed to the non-optimized version, which only computed 1 pixel
 per iteration.
 
-Note however, that during optimization it was assumed, that the row size of the
-foreground image is a multiple of sixteen, therefore it could easily be split
-into several batches of 16 pixels.
+Note however, that during optimization the assumption was taken, that the row
+size of the foreground image is a multiple of sixteen, therefore it could easily
+be split into several batches of 16 pixels.
 

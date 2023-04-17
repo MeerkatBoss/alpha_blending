@@ -157,8 +157,6 @@ int blend_pixels_optimized(PixelImage* background,
                 fg_pos_x + fg_size_x, bg_size_x);
         ASSERT_LESS_EQUAL(
                 fg_pos_y + fg_size_y, bg_size_y);
-        ASSERT_TRUE(
-                fg_size_x % 16 == 0);
     }
     SAFE_BLOCK_HANDLE_ERRORS
     {
@@ -172,7 +170,8 @@ int blend_pixels_optimized(PixelImage* background,
     for (size_t y = 0; y < fg_size_y; ++y)
     {
         // TODO: Handle non-aligned addresses and different row sizes
-        for (size_t x = 0; x < fg_size_x; x += 16)
+        size_t x = 0;
+        for (x = 0; x + 16 <= fg_size_x; x += 16)
         {
             __m512i fg1 = _mm512_loadu_si512(fg_row + x);
             __m512i bg1 = _mm512_loadu_si512(bg_row + x);
@@ -204,6 +203,25 @@ int blend_pixels_optimized(PixelImage* background,
             bg1 = _mm512_add_epi8(bg1, bg2);
 
             _mm512_storeu_si512(bg_row + x, bg1);
+        }
+        // Remaining pixels
+        for (; x < fg_size_x; ++x)
+        {
+            const uint16_t fg_alpha = fg_row[x].alpha;
+
+            const uint16_t red   = bg_row[x].red   * (255 - fg_alpha)
+                                 + fg_row[x].red   * fg_alpha;
+            
+            const uint16_t green = bg_row[x].green * (255 - fg_alpha)
+                                 + fg_row[x].green * fg_alpha;
+
+            const uint16_t blue  = bg_row[x].blue  * (255 - fg_alpha)
+                                 + fg_row[x].blue  * fg_alpha;
+            
+            // (x >> 8) == (x / 256) ~= (x / 255)
+            bg_row[x].red   = (uint8_t) (red   >> 8);
+            bg_row[x].green = (uint8_t) (green >> 8);
+            bg_row[x].blue  = (uint8_t) (blue  >> 8);
         }
 
         fg_row += fg_size_x;
