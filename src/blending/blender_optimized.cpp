@@ -169,7 +169,6 @@ int blend_pixels_optimized(PixelImage* background,
 
     for (size_t y = 0; y < fg_size_y; ++y)
     {
-        // TODO: Handle non-aligned addresses and different row sizes
         size_t x = 0;
         for (x = 0; x + 16 <= fg_size_x; x += 16)
         {

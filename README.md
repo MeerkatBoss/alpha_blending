@@ -90,18 +90,38 @@ bg2 = _mm512_add_epi16(bg2, fg2);
 bg1 = _mm512_shuffle_epi8(bg1, MASK_PACK_1);
 bg2 = _mm512_shuffle_epi8(bg2, MASK_PACK_2);
 
+// Pixels do not intersect and can be simply added
 bg1 = _mm512_add_epi8(bg1, bg2);
 
 _mm512_storeu_si512(bg_row + x, bg1);
+
+...
+
+const uint16_t fg_alpha = fg_row[x].alpha;
+
+const uint16_t red   = bg_row[x].red   * (255 - fg_alpha)
+                     + fg_row[x].red   * fg_alpha;
+
+const uint16_t green = bg_row[x].green * (255 - fg_alpha)
+                     + fg_row[x].green * fg_alpha;
+
+const uint16_t blue  = bg_row[x].blue  * (255 - fg_alpha)
+                     + fg_row[x].blue  * fg_alpha;
+
+// (x >> 8) == (x / 256) ~= (x / 255)
+bg_row[x].red   = (uint8_t) (red   >> 8);
+bg_row[x].green = (uint8_t) (green >> 8);
+bg_row[x].blue  = (uint8_t) (blue  >> 8);
 ```
 
 When compiling with the same optimization level and same machine options, the
 compiler yields the following assembly code:
 
 ```asm
-vmovdqu8        zmm4, ZMMWORD PTR [rcx+rax*4]
-vmovdqu8        zmm3, ZMMWORD PTR [rdx+rax*4]
-vmovdqu8        zmm2, ZMMWORD PTR [rcx+rax*4]
+vmovdqu8        zmm4, ZMMWORD PTR [r9-64+rax*4]
+vmovdqu8        zmm3, ZMMWORD PTR [rdx-64+rax*4]
+mov     rcx, rax
+vmovdqu8        zmm2, ZMMWORD PTR [r9-64+rax*4]
 vpshufb zmm0, zmm4, zmm8
 vpshufb zmm1, zmm3, zmm8
 vpshufb zmm5, zmm3, zmm9
@@ -121,15 +141,64 @@ vpaddw  zmm0, zmm0, zmm10
 vpshufb zmm1, zmm1, zmm13
 vpshufb zmm0, zmm0, zmm12
 vpaddb  zmm0, zmm0, zmm1
-vmovdqu64       ZMMWORD PTR [rdx+rax*4], zmm0
+vmovdqu64       ZMMWORD PTR [rdx-64+rax*4], zmm0
+
+...
+
+movzx   eax, BYTE PTR [rsi+3]
+movzx   r15d, BYTE PTR [rdx+1]
+mov     r8d, r11d
+add     rdx, 4
+movzx   ebx, BYTE PTR [rdx-2]
+add     rsi, 4
+sub     r8d, eax
+mov     ecx, eax
+imul    r15d, r8d
+mul     BYTE PTR [rsi-3]
+imul    ebx, r8d
+add     r15d, eax
+mov     eax, ecx
+mul     BYTE PTR [rsi-2]
+add     ebx, eax
+movzx   eax, BYTE PTR [rdx-4]
+imul    r8d, eax
+mov     eax, ecx
+mul     BYTE PTR [rsi-4]
+mov     BYTE PTR [rdx-2], bh
+add     eax, r8d
+mov     BYTE PTR [rdx-4], ah
+mov     eax, r15d
+mov     BYTE PTR [rdx-3], ah
 ```
 
-The assembly code remained roughly the same size as it was before optimizations,
-but it gained the ability to perform calculations on 16 pixels per loop
-iteration, as opposed to the non-optimized version, which only computed 1 pixel
-per iteration.
+The size of assembly code of fragment of code performing actual computations
+grew by about a factor of two, due to the necessity of handling image sizes,
+which are not a multiple of 16. However this does not present a big enough
+problem, as code size remains relatively small and therefore cache-friendly.
 
-Note however, that during optimization the assumption was taken, that the row
-size of the foreground image is a multiple of sixteen, therefore it could easily
-be split into several batches of 16 pixels.
+The second implementation is able to perform 16 pixel computations per cycle
+iteration, which makes it significantly faster than the first one. Note, that
+the second, less efficient cycle in the efficient implementation is the exact
+copy of the cycle in naive implementation, however it is guaranteed to execute
+no more than 15 times per image row ($O(1)$ time). As the image size grows,
+smaller and smaller percentage of pixels will be calculated inefficiently and
+the performance gain will grow in accordance with the
+[Amdahl's Law](https://en.wikipedia.org/wiki/Amdahl%27s_law).
+
+## Compiling with -O3 optimization level
+
+When compiling the naive implementation with `-O3` optimization option, the
+compiler yields [the following assembly code](https://godbolt.org/z/a3aMbK66d).
+Two things are notable here. Firstly, the size of assembly code grew
+significantly in comparison with the `-O2` compiled version. Secondly, the
+compiler was able to utilize the vectorized instructions, however it seems to
+have used not the larger `zmm` registers, but the smaller (by a factor of 4)
+`xmm` registers, which would not be able to outperform the optimized version.
+Additionally, the increased code size undermines to locality of the program,
+which in turn decreases the probability of instruction cache hits and slows
+the program execution down.
+
+When compiling the optimized implementation with the `-O3` optimization level,
+the produced assembly code does not change compared to the `-O2` compiled
+version.
 
