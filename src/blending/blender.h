@@ -15,6 +15,24 @@
 #include "commons/definitions.h"
 
 /**
+ * @brief Blend foreground on top of background
+ *
+ * @param[inout] bg - Background pixel
+ * @param[in]    fg - Foreground pixel	
+ *
+ */
+void combine_pixels(Pixel* bg, const Pixel* fg);
+
+/**
+ * @brief Blend several 16 foreground pixels on top of background
+ *
+ * @param[inout] bg - Background pixels
+ * @param[in]    fg - Foreground pixels
+ *
+ */
+void combine_pixels_simd(Pixel bg[16], const Pixel fg[16]);
+
+/**
  * @brief Blend foreground on top of backround and store result
  * in background
  *

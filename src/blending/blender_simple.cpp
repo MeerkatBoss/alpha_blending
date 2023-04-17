@@ -2,6 +2,25 @@
 
 #include "blender.h"
 
+void combine_pixels(Pixel* bg, const Pixel* fg)
+{
+    const uint16_t fg_alpha = fg->alpha;
+
+    const uint16_t red   = bg->red   * (255 - fg_alpha)
+                         + fg->red   * fg_alpha;
+    
+    const uint16_t green = bg->green * (255 - fg_alpha)
+                         + fg->green * fg_alpha;
+
+    const uint16_t blue  = bg->blue  * (255 - fg_alpha)
+                         + fg->blue  * fg_alpha;
+    
+    // (x >> 8) == (x / 256) ~= (x / 255)
+    bg->red   = (uint8_t) (red   >> 8);
+    bg->green = (uint8_t) (green >> 8);
+    bg->blue  = (uint8_t) (blue  >> 8);
+}
+
 int blend_pixels_simple(PixelImage* background,
                          const MovedImage* foreground)
 {
@@ -34,21 +53,7 @@ int blend_pixels_simple(PixelImage* background,
     {
         for (size_t x = 0; x < fg_size_x; ++x)
         {
-            const uint16_t fg_alpha = fg_row[x].alpha;
-
-            const uint16_t red   = bg_row[x].red   * (255 - fg_alpha)
-                                 + fg_row[x].red   * fg_alpha;
-            
-            const uint16_t green = bg_row[x].green * (255 - fg_alpha)
-                                 + fg_row[x].green * fg_alpha;
-
-            const uint16_t blue  = bg_row[x].blue  * (255 - fg_alpha)
-                                 + fg_row[x].blue  * fg_alpha;
-            
-            // (x >> 8) == (x / 256) ~= (x / 255)
-            bg_row[x].red   = (uint8_t) (red   >> 8);
-            bg_row[x].green = (uint8_t) (green >> 8);
-            bg_row[x].blue  = (uint8_t) (blue  >> 8);
+            combine_pixels(bg_row + x, fg_row + x);
         }
         bg_row += bg_size_x;
         fg_row += fg_size_x;

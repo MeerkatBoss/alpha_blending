@@ -139,6 +139,40 @@ const __mmask32 IGNORE_ALPHA = _cvtu32_mask32(0x77777777);
 #undef MASK_PACK_1_ROW
 #undef MASK_PACK_2_ROW
 
+void combine_pixels_simd(Pixel bg[16], const Pixel fg[16])
+{
+    __m512i fg1 = _mm512_loadu_si512(fg);
+    __m512i bg1 = _mm512_loadu_si512(bg);
+
+    __m512i fg2 = _mm512_shuffle_epi8(fg1, MASK_SPREAD_2);
+    __m512i bg2 = _mm512_shuffle_epi8(bg1, MASK_SPREAD_2);
+            fg1 = _mm512_shuffle_epi8(fg1, MASK_SPREAD_1);
+            bg1 = _mm512_shuffle_epi8(bg1, MASK_SPREAD_1);
+
+    __m512i fg_alpha1 = _mm512_shuffle_epi8(fg1, MASK_SPREAD_ALPHA);
+    __m512i fg_alpha2 = _mm512_shuffle_epi8(fg2, MASK_SPREAD_ALPHA);
+
+    __m512i bg_alpha1 = _mm512_sub_epi16(EPI16_255, fg_alpha1);
+    __m512i bg_alpha2 = _mm512_sub_epi16(EPI16_255, fg_alpha2);
+
+    bg1 = _mm512_mask_mullo_epi16(bg1, IGNORE_ALPHA, bg1, bg_alpha1);
+    bg2 = _mm512_mask_mullo_epi16(bg2, IGNORE_ALPHA, bg2, bg_alpha2);
+
+    fg1 = _mm512_maskz_mullo_epi16(IGNORE_ALPHA, fg1, fg_alpha1);
+    fg2 = _mm512_maskz_mullo_epi16(IGNORE_ALPHA, fg2, fg_alpha2);
+
+    bg1 = _mm512_add_epi16(bg1, fg1);
+    bg2 = _mm512_add_epi16(bg2, fg2);
+
+    bg1 = _mm512_shuffle_epi8(bg1, MASK_PACK_1);
+    bg2 = _mm512_shuffle_epi8(bg2, MASK_PACK_2);
+
+    // Pixels do not intersect and can be simply added
+    bg1 = _mm512_add_epi8(bg1, bg2);
+
+    _mm512_storeu_si512(bg, bg1);
+}
+
 int blend_pixels_optimized(PixelImage* background,
                             const MovedImage* foreground)
 {
@@ -172,55 +206,12 @@ int blend_pixels_optimized(PixelImage* background,
         size_t x = 0;
         for (x = 0; x + 16 <= fg_size_x; x += 16)
         {
-            __m512i fg1 = _mm512_loadu_si512(fg_row + x);
-            __m512i bg1 = _mm512_loadu_si512(bg_row + x);
-
-            __m512i fg2 = _mm512_shuffle_epi8(fg1, MASK_SPREAD_2);
-            __m512i bg2 = _mm512_shuffle_epi8(bg1, MASK_SPREAD_2);
-                    fg1 = _mm512_shuffle_epi8(fg1, MASK_SPREAD_1);
-                    bg1 = _mm512_shuffle_epi8(bg1, MASK_SPREAD_1);
-
-            __m512i fg_alpha1 = _mm512_shuffle_epi8(fg1, MASK_SPREAD_ALPHA);
-            __m512i fg_alpha2 = _mm512_shuffle_epi8(fg2, MASK_SPREAD_ALPHA);
-
-            __m512i bg_alpha1 = _mm512_sub_epi16(EPI16_255, fg_alpha1);
-            __m512i bg_alpha2 = _mm512_sub_epi16(EPI16_255, fg_alpha2);
-
-            bg1 = _mm512_mask_mullo_epi16(bg1, IGNORE_ALPHA, bg1, bg_alpha1);
-            bg2 = _mm512_mask_mullo_epi16(bg2, IGNORE_ALPHA, bg2, bg_alpha2);
-
-            fg1 = _mm512_maskz_mullo_epi16(IGNORE_ALPHA, fg1, fg_alpha1);
-            fg2 = _mm512_maskz_mullo_epi16(IGNORE_ALPHA, fg2, fg_alpha2);
-
-            bg1 = _mm512_add_epi16(bg1, fg1);
-            bg2 = _mm512_add_epi16(bg2, fg2);
-
-            bg1 = _mm512_shuffle_epi8(bg1, MASK_PACK_1);
-            bg2 = _mm512_shuffle_epi8(bg2, MASK_PACK_2);
-
-            // Pixels do not intersect and can be simply added
-            bg1 = _mm512_add_epi8(bg1, bg2);
-
-            _mm512_storeu_si512(bg_row + x, bg1);
+            combine_pixels_simd(bg_row + x, fg_row + x);
         }
         // Remaining pixels
         for (; x < fg_size_x; ++x)
         {
-            const uint16_t fg_alpha = fg_row[x].alpha;
-
-            const uint16_t red   = bg_row[x].red   * (255 - fg_alpha)
-                                 + fg_row[x].red   * fg_alpha;
-            
-            const uint16_t green = bg_row[x].green * (255 - fg_alpha)
-                                 + fg_row[x].green * fg_alpha;
-
-            const uint16_t blue  = bg_row[x].blue  * (255 - fg_alpha)
-                                 + fg_row[x].blue  * fg_alpha;
-            
-            // (x >> 8) == (x / 256) ~= (x / 255)
-            bg_row[x].red   = (uint8_t) (red   >> 8);
-            bg_row[x].green = (uint8_t) (green >> 8);
-            bg_row[x].blue  = (uint8_t) (blue  >> 8);
+            combine_pixels(bg_row + x, fg_row + x);
         }
 
         fg_row += fg_size_x;

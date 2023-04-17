@@ -2,6 +2,8 @@
 
 #include "meerkat_assert/asserts.h"
 
+#include "blending/blender.h"
+
 #include "halo.h"
 
 int add_halo_simple(PixelImage* background, const Halo* halo)
@@ -32,6 +34,13 @@ int add_halo_simple(PixelImage* background, const Halo* halo)
         return -1;
     }
     SAFE_BLOCK_END
+
+    Pixel blended = {
+        .red   = halo->color.red,
+        .green = halo->color.green,
+        .blue  = halo->color.blue,
+        .alpha = 0
+    };
 
     double alpha_norm = (double)halo->color.alpha / 255;
 
@@ -71,14 +80,9 @@ int add_halo_simple(PixelImage* background, const Halo* halo)
                             (13*sqrt(sqrt(color_base)) * sqrt(color_base));
 
             // uint8_t alpha = (uint8_t) (255 * color_base);
-            uint8_t alpha_bg = (uint8_t) (255 - alpha);
+            blended.alpha = alpha;
 
-            bg_row[x].red   = (uint8_t) ( (bg_row[x].red   * alpha_bg
-                                          + halo->color.red   * alpha) >> 8 );
-            bg_row[x].green = (uint8_t) ( (bg_row[x].green * alpha_bg
-                                          + halo->color.green * alpha) >> 8 );
-            bg_row[x].blue  = (uint8_t) ( (bg_row[x].blue  * alpha_bg
-                                          + halo->color.blue  * alpha) >> 8 );
+            combine_pixels(bg_row + x, &blended);
         }
         bg_row += bg_size_x;
     }
