@@ -152,7 +152,6 @@ were obtained:
 | Implementation | Test time ($\pm$ stddev) |
 |---|---|
 | without SIMD | 469.41 ms ($\pm$ 12.94ms) |
-|---|---|
 |with SIMD | 54.51 ms ($\pm$ 1.07ms) |
 
 Total performance increase: x8.61 ($\pm$ 0.41)
