@@ -148,12 +148,15 @@ execution time and the performance gain increases in accordance with the
 
 When running performance tests on both implementation, the following results
 were obtained:
-```
-without SIMD: 469.41 ms ($\pm$ 12.94ms)
-with SIMD: 54.51 ms ($\pm$ 1.07ms)
 
-Performance increase: x8.61 ($\pm$ 0.41)
-```
+| Implementation | Test time ($\pm$ stddev) |
+|---|---|
+| without SIMD | 469.41 ms ($\pm$ 12.94ms) |
+|---|---|
+|with SIMD | 54.51 ms ($\pm$ 1.07ms) |
+
+Total performance increase: x8.61 ($\pm$ 0.41)
+
 
 ## Compiling with -O3 optimization level
 
