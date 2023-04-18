@@ -12,7 +12,7 @@ Two implementations are researched here: the straightforward sequential one,
 and optimized with SIMD. The comparison of assembly code was made using
 [this compiler explorer website](https://godbolt.org).
 
-## Simple implementation
+### Simple implementation
 
 Initially, alpha blending algorithm was implemented without using SIMD with
 regular sequential operations. Here is an extract from the main procedure of
@@ -77,7 +77,7 @@ Note, that the compiler fails to incorporate the usage of machine-specific AVX
 instruction set due to the fact that the compiled procedure modifies only single
 pixel and not an array of them.
 
-## SIMD optimization
+### SIMD optimization
 
 In an attempt to improve the performance of an algorithm, the main procedure
 was rewritten using SIMD as follows (see
@@ -157,12 +157,12 @@ execution time and the performance gain increases in accordance with the
 
 ## Comparison results
 
-To compare the performance of two implementations the following test was run
+To compare the performance of two implementations the following test was run:
 
 - Foreground image of size 1024x1024 pixels was blended on top of the same
 background 200 times.
-- The described test was repeated 500 times for larger sample size. The
-average of all times was taken and standard deviation was calculated.
+- The test was repeated 500 times for larger sample size. The average of all
+recorded execution times was taken and standard deviation was calculated.
 
 When running performance tests on both implementation, the following results
 were obtained:
@@ -181,18 +181,18 @@ compiler yields [the following code](https://godbolt.org/z/MMYEcfnvr). Several
 things are notable in this assembly code.
 
 Firstly, the compiler seems to get rid of the call to `combine_pixels` entirely,
-inlining this function. This clearly presents a performance gain, as no time
+inlining this function. This can significantly improve performance, as no time
 is spent on calling and returning from the helper function.
 
 Secondly, the compiler successfully utilizes the vectorized instructions in the
 optimized code. However, it avoids using the larger `zmm` registers, using the
-smaller (by a factor of 4) `xmm` registers. While this does speed up the program
+smaller (by a factor of 4) `xmm` ones. While this does speed up the program
 execution, we have already seen, that a greater degree of parallelism can be
 achieved with `zmm` registers.
 
 Lastly, the code compiled with `-O3` optimization level is much larger than both
-previous examples. The large code size is detrimental to the program locality,
-which can worsen the program performance by increasing the total number of
+previous examples. The large code size decreases the program locality, which
+might lead to poor program performance due to the higher amount of
 instruction cache misses per cycle iteration.
 
 ## Conclusions
