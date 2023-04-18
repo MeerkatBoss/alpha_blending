@@ -1,5 +1,17 @@
 # Alpha Blending optimization with SIMD
 
+## Task description
+
+Given two images: [foreground](assets/poltorashka_cropped_uneven.bmp) and
+[background](assets/wooden_table_scaled.bmp), layer foreground on top of
+background using alpha blending.
+
+## Implementation details
+
+Two implementations are researched here: the straightforward sequential one,
+and optimized with SIMD. The comparison of assembly code was made using
+[this compiler explorer website](godbolt.org).
+
 ## Simple implementation
 
 Initially, alpha blending algorithm was implemented without using SIMD with
@@ -52,8 +64,7 @@ combine_pixels(Pixel*, Pixel const*):
         mul     BYTE PTR [rdi]
         mov     edx, eax
         mov     eax, ecx
-        mul     BYTE PTR [rsi]
-        mov     BYTE PTR [rdi+2], bh
+        mul     BYTE PTR [rsi] mov     BYTE PTR [rdi+2], bh
         pop     rbx
         add     edx, eax
         mov     eax, r8d
@@ -62,7 +73,7 @@ combine_pixels(Pixel*, Pixel const*):
         ret
 ```
 
-Note, that the compiler failes to incorporate the usage of machine-specific AVX
+Note, that the compiler fails to incorporate the usage of machine-specific AVX
 instruction set due to the fact that the compiled procedure modifies only single
 pixel and not an array of them.
 
@@ -146,16 +157,22 @@ execution time and the performance gain increases in accordance with the
 
 ## Comparison results
 
+To compare the performance of two implementations the following test was run
+
+- Foreground image of size 1024x1024 pixels was blended on top of the same
+background 200 times.
+- The described test was repeated 500 times for larger sample size. The
+average of all times was taken and standard deviation was calculated.
+
 When running performance tests on both implementation, the following results
 were obtained:
 
-| Implementation | Test time ($\pm$ stddev) |
+| Implementation | Mean time ($\pm$ stddev) |
 |---|---|
-| without SIMD | 469.41 ms ($\pm$ 12.94ms) |
-|with SIMD | 54.51 ms ($\pm$ 1.07ms) |
+|without SIMD   | 469.41 ms ($\pm$ 12.94ms) |
+|with SIMD      | 54.51 ms ($\pm$ 1.07ms)   |
 
 Total performance increase: x8.61 ($\pm$ 0.41)
-
 
 ## Compiling with -O3 optimization level
 
@@ -170,7 +187,7 @@ is spent on calling and returning from the helper function.
 Secondly, the compiler successfully utilizes the vectorized instructions in the
 optimized code. However, it avoids using the larger `zmm` registers, using the
 smaller (by a factor of 4) `xmm` registers. While this does speed up the program
-execution, we have already seen, that a greater degree of paralellism can be
+execution, we have already seen, that a greater degree of parallelism can be
 achieved with `zmm` registers.
 
 Lastly, the code compiled with `-O3` optimization level is much larger than both

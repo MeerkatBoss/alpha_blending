@@ -76,9 +76,9 @@ int add_halo_simple(PixelImage* background, const Halo* halo)
 
             // color_base is intentionally NOT normalized, int overflow
             // produces really cool stripes
-            uint8_t alpha = (uint8_t) (unsigned) (255 * sqrt(color_base));
+            // uint8_t alpha = (uint8_t) (unsigned) (255 * sqrt(color_base));
 
-            // uint8_t alpha = (uint8_t) (255 * color_base);
+            uint8_t alpha = (uint8_t) (255 * color_base);
             blended.alpha = alpha;
 
             combine_pixels(bg_row + x, &blended);
