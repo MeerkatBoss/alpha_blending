@@ -10,7 +10,7 @@ background using alpha blending.
 
 Two implementations are researched here: the straightforward sequential one,
 and optimized with SIMD. The comparison of assembly code was made using
-[this compiler explorer website](godbolt.org).
+[this compiler explorer website](https://godbolt.org).
 
 ## Simple implementation
 
