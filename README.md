@@ -195,3 +195,10 @@ previous examples. The large code size is detrimental to the program locality,
 which can worsen the program performance by increasing the total number of
 instruction cache misses per cycle iteration.
 
+## Conclusions
+
+The usage of SIMD machine-specific compiler intrinsics proves to be an efficient
+way of optimizing the program performance. Although the compiler successfully
+utilizes some vectorized instructions, it avoids using the bigger registers and
+produces much larger code size, which can be undesirable in some cases.
+
