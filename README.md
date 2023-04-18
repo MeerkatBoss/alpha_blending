@@ -169,10 +169,10 @@ were obtained:
 
 | Implementation | Mean time ($\pm$ stddev) |
 |---|---|
-|without SIMD   | 469.41 ms ($\pm$ 12.94ms) |
-|with SIMD      | 54.51 ms ($\pm$ 1.07ms)   |
+|without SIMD   | 460 ms ($\pm$ 13 ms) |
+|with SIMD      | 55 ms ($\pm$ 1 ms)   |
 
-Total performance increase: x8.61 ($\pm$ 0.41)
+Total performance increase: x8.6 ($\pm$ 0.4)
 
 ## Compiling with -O3 optimization level
 
